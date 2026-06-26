@@ -1,0 +1,9 @@
+@import "tailwindcss";
+
+@theme {
+  --color-space-darkest: #0B0F19;
+  --color-space-panel: #111827;
+  --color-space-border: #1F2937;
+  --color-brand-blue: #2563EB;
+  --color-brand-purple: #8B5CF6;
+}
