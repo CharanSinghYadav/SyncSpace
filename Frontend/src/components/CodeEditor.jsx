@@ -42,7 +42,8 @@ const CodeEditor = ({ roomId }) => {
         setOutput("Executing via proxy...");
 
         try {
-            const response = await fetch("https://syncspace-1fjm.onrender.com/run-code", {
+            // 🔥 Fixed backend API URL to the working one
+            const response = await fetch("https://syncspace-wo8l.onrender.com/run-code", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ code, language })
@@ -67,8 +68,8 @@ const CodeEditor = ({ roomId }) => {
             
             {/* MINIMALIST ADMIN MODAL */}
             {showAdmin && (
-                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs">
-                    <div className="bg-[#101623] border border-[#1F2937] w-96 rounded-xl shadow-2xl p-5">
+                <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4">
+                    <div className="bg-[#101623] border border-[#1F2937] w-full max-w-sm rounded-xl shadow-2xl p-5">
                         <div className="flex justify-between items-center mb-5 pb-3 border-b border-[#1F2937]">
                             <h2 className="text-xs font-mono uppercase tracking-wider text-slate-300 font-semibold">
                                 Telemetry Analytics
@@ -102,11 +103,11 @@ const CodeEditor = ({ roomId }) => {
                 </div>
             )}
 
-            {/* EDITOR TOOLBAR */}
-            <div className="h-12 shrink-0 border-b border-[#1F2937] px-4 flex items-center justify-between bg-[#101623]">
+            {/* EDITOR TOOLBAR (Responsive Overflow) */}
+            <div className="h-12 shrink-0 border-b border-[#1F2937] px-2 md:px-4 flex items-center justify-between bg-[#101623] overflow-x-auto overflow-y-hidden no-scrollbar">
                 
                 {/* TAB SWITCHER */}
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3 shrink-0">
                     <div className="flex bg-[#090D16] p-1 rounded-lg border border-[#1F2937]">
                         <button 
                             onClick={() => setActiveTab("code")} 
@@ -124,7 +125,7 @@ const CodeEditor = ({ roomId }) => {
 
                     <button 
                         onClick={() => setShowAdmin(true)}
-                        className="text-xs font-mono text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+                        className="text-xs font-mono text-slate-500 hover:text-slate-300 transition-colors cursor-pointer mr-2 md:mr-0"
                     >
                         Metrics
                     </button>
@@ -132,7 +133,7 @@ const CodeEditor = ({ roomId }) => {
 
                 {/* RIGHT CONTROLS */}
                 {activeTab === "code" && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 md:gap-3 shrink-0">
                         <select 
                             value={language} 
                             onChange={(e) => setLanguage(e.target.value)} 
@@ -156,7 +157,7 @@ const CodeEditor = ({ roomId }) => {
                 )}
 
                 {activeTab === "whiteboard" && (
-                    <span className="text-[11px] font-mono text-slate-500">EXCALIDRAW://SANDBOX</span>
+                    <span className="text-[10px] md:text-[11px] font-mono text-slate-500 pr-2 md:pr-0 shrink-0">EXCALIDRAW://SANDBOX</span>
                 )}
             </div>
 
@@ -166,7 +167,7 @@ const CodeEditor = ({ roomId }) => {
                     <div className="h-[70%] min-h-0 w-full border-b border-[#1F2937]">
                         <Editor height="100%" width="100%" theme="vs-dark" language={language} value={code} onChange={handleEditorChange} options={{ minimap: { enabled: false }, fontSize: 13, wordWrap: "on", padding: { top: 16 } }} />
                     </div>
-                    <div className="h-[30%] min-h-0 w-full bg-[#090D16] p-3 flex flex-col font-mono">
+                    <div className="h-[30%] min-h-0 w-full bg-[#090D16] p-3 flex flex-col font-mono pb-16 md:pb-3">
                         <div className="flex items-center justify-between pb-2 border-b border-[#1F2937]/60 mb-2 shrink-0">
                             <span className="text-[11px] text-slate-500">OUTPUT</span>
                             <button onClick={() => setOutput("")} className="text-[11px] text-slate-600 hover:text-slate-400 cursor-pointer">Clear</button>

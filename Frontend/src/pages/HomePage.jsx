@@ -18,7 +18,8 @@ const HomePage = () => {
             {/* Subtle Ambient Studio Light */}
             <div className="absolute w-[600px] h-[350px] bg-blue-600/10 blur-[160px] rounded-full pointer-events-none -z-10" />
 
-            <form onSubmit={joinRoom} className="bg-[#101623] p-8 rounded-xl flex flex-col gap-6 w-96 border border-[#1F2937] shadow-xl">
+            {/* Changed width to be responsive on mobile */}
+            <form onSubmit={joinRoom} className="bg-[#101623] p-8 rounded-xl flex flex-col gap-6 w-full max-w-sm mx-4 md:mx-0 border border-[#1F2937] shadow-xl">
                 
                 {/* BRANDING */}
                 <div className="flex flex-col items-center gap-2 mb-1">
@@ -26,7 +27,7 @@ const HomePage = () => {
                     <h1 className="text-xl font-bold tracking-tight text-white">
                         SyncSpace Cloud
                     </h1>
-                    <p className="text-xs text-slate-400 font-normal">
+                    <p className="text-xs text-slate-400 font-normal text-center">
                         Real-time collaborative developer workspace
                     </p>
                 </div>
