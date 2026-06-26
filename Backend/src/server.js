@@ -11,20 +11,24 @@ connectDB();
 connectRedis();
 
 const app = express();
+
+// 1. EXPRESS MAGIC CORS
 app.use(cors({
-    origin: ["https://sync-space-orcin-one.vercel.app","http://localhost:5173"]
+    origin: true, // 'true' likhne se ye kisi bhi origin ko dynamically allow kar dega (Vercel ho ya Localhost)
+    methods: ["GET", "POST", "OPTIONS"],
+    credentials: true,
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
+
 app.use(express.json());
 
 const server = http.createServer(app);
 
+// 2. SOCKET.IO MAGIC CORS
 const io = new Server(server, {
     cors: {
-        origin: [
-            "http://localhost:5173",
-            "https://sync-space-orcin-one.vercel.app"
-        ],
-        methods: ["GET", "POST"],
+        origin: true, // Yahan bhi string ki jagah true laga de
+        methods: ["GET", "POST", "OPTIONS"],
         credentials: true
     }
 });
