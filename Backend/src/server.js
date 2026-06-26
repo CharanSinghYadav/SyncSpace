@@ -2,7 +2,6 @@ import 'dotenv/config';
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
-import cors from 'cors';
 import { initSocket } from './socket/socketManager.js';
 import { connectDB } from './config/db.js';
 import { connectRedis } from './config/redis.js';
@@ -11,34 +10,54 @@ connectDB();
 connectRedis();
 
 const app = express();
-const server = http.createServer(app);
 
+// 🔥 THE NUCLEAR NATIVE CORS MIDDLEWARE (No NPM package needed!)
+app.use((req, res, next) => {
+    const allowedOrigins = [
+        "https://sync-space-orcin-one.vercel.app",
+        "http://localhost:5173"
+    ];
+    const origin = req.headers.origin;
 
-const corsOptions = {
-    origin: [
-        "http://localhost:5173",
-        "https://sync-space-orcin-one.vercel.app"
-    ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true
-};
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    } else {
+        // Safety fallback for direct API pings
+        res.setHeader('Access-Control-Allow-Origin', "https://sync-space-orcin-one.vercel.app");
+    }
 
-app.use(cors(corsOptions));
-app.options('/run-code', cors(corsOptions));
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    // Agar OPTIONS preflight request hai, toh yahin se 200 OK bhej ke wapas mod do!
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
+    next();
+});
+
 app.use(express.json());
 
+const server = http.createServer(app);
+
 const io = new Server(server, {
-    cors: corsOptions
+    cors: {
+        origin: [
+            "https://sync-space-orcin-one.vercel.app",
+            "http://localhost:5173"
+        ],
+        methods: ["GET", "POST"],
+        credentials: true
+    }
 });
 
 initSocket(io);
 
-
 app.post('/run-code', async (req, res) => {
     const { code, language } = req.body;
     
-    // JDoodle language mapping
     const langMap = { javascript: "nodejs", python: "python3", cpp: "cpp", java: "java" };
 
     try {
