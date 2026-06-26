@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import 'dotenv/config';
 import express from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
@@ -11,33 +11,28 @@ connectDB();
 connectRedis();
 
 const app = express();
+const server = http.createServer(app);
 
-// 1. EXPRESS MAGIC CORS
-app.use(cors({
-    origin: true, // 'true' likhne se ye kisi bhi origin ko dynamically allow kar dega (Vercel ho ya Localhost)
-    methods: ["GET", "POST", "OPTIONS"],
-    credentials: true,
-    allowedHeaders: ["Content-Type", "Authorization"]
-}));
+
+const corsOptions = {
+    origin: [
+        "http://localhost:5173",
+        "https://sync-space-orcin-one.vercel.app"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+};
 
 app.use(cors(corsOptions));
-
 app.options('*', cors(corsOptions));
 
 app.use(express.json());
 
-const server = http.createServer(app);
-
-// 2. SOCKET.IO MAGIC CORS
 const io = new Server(server, {
-    cors: {
-        origin: true, // Yahan bhi string ki jagah true laga de
-        methods: ["GET", "POST", "OPTIONS"],
-        credentials: true
-    }
+    cors: corsOptions
 });
 
-// Socket logic external file se call ho raha hai
 initSocket(io);
 
 
