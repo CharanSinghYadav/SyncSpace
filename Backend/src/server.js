@@ -25,7 +25,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
+app.options('/run-code', cors(corsOptions));
 app.use(express.json());
 
 const io = new Server(server, {
