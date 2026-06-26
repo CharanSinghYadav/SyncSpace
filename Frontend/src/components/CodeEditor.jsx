@@ -43,7 +43,7 @@ const CodeEditor = ({ roomId }) => {
 
         try {
             // 🔥 Fixed backend API URL to the working one
-            const response = await fetch("https://syncspace-wo8l.onrender.com/run-code", {
+            const response = await fetch("https://syncspace-1fjm.onrender.com/run-code", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ code, language })
