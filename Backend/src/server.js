@@ -12,7 +12,7 @@ connectRedis();
 
 const app = express();
 app.use(cors({
-    origin: ["https://sync-space-orcin-one.vercel.app/","http://localhost:5173"]
+    origin: ["https://sync-space-orcin-one.vercel.app","http://localhost:5173"]
 }));
 app.use(express.json());
 
@@ -20,7 +20,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: "https://sync-space-orcin-one.vercel.app/",
+        origin: "https://sync-space-orcin-one.vercel.app",
         methods: ["GET", "POST"]
     }
 });
