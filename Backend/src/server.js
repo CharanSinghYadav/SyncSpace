@@ -20,8 +20,12 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: "https://sync-space-orcin-one.vercel.app",
-        methods: ["GET", "POST"]
+        origin: [
+            "http://localhost:5173",
+            "https://sync-space-orcin-one.vercel.app"
+        ],
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 
