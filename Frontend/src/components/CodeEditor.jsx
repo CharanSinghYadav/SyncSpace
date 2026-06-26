@@ -42,7 +42,7 @@ const CodeEditor = ({ roomId }) => {
         setOutput("Executing via proxy...");
 
         try {
-            const response = await fetch("sync-space-orcin-one.vercel.app/run-code", {
+            const response = await fetch("https://syncspace-wo8l.onrender.com/run-code", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ code, language })
