@@ -1,8 +1,8 @@
 import { redisClient } from "../config/redis.js";
-import Room from "../models/Room.js";
+import { Room } from "../models/Room.js";
 import { Session } from "../models/Session.js";
 
-//HELPER FUNCTION: Room me baithe saare logo ka Naam aur ID nikalne ke liye
+// HELPER: Room me baithe saare logo ka Naam aur ID nikalne ke liye
 const getAllConnectedClients = (roomId, io) => {
   const roomIds = io.sockets.adapter.rooms.get(roomId);
   if (!roomIds) return [];
@@ -19,18 +19,28 @@ export const initSocket = (io) => {
   io.on("connection", (socket) => {
     console.log(`🟢 New User Connected: ${socket.id}`);
 
+    // 1. UNIFIED JOIN ROOM (Merged both listeners + Fetches DB Chats)
     socket.on("join-room", async ({ roomId, username }) => {
       socket.join(roomId);
       socket.roomId = roomId;
-
-      //socket object pe username bhi save kar diya
       socket.username = username;
 
       console.log(`👤 ${username} joined room: ${roomId}`);
 
+      try {
+        // A. Session log save karo 
+        const newSession = new Session({ username, roomId });
+        await newSession.save();
+      } catch (err) {
+        console.log("Session DB logging skipped");
+      }
+
+      // B. Fetch Code from Redis or DB
       let latestCode = await redisClient.get(roomId);
+      let dbRoom = null;
+
       if (!latestCode) {
-        const dbRoom = await Room.findOne({ roomId });
+        dbRoom = await Room.findOne({ roomId });
         if (dbRoom) {
           latestCode = dbRoom.code;
           await redisClient.set(roomId, latestCode);
@@ -38,53 +48,64 @@ export const initSocket = (io) => {
       }
       if (latestCode) socket.emit("code-update", latestCode);
 
-      //LOGIC: Room ke sabhi logo ko updated User List bhej do
+      // C. FETCH CHAT HISTORY FROM DB & SEND ONLY TO JOINING USER
+      if (!dbRoom) dbRoom = await Room.findOne({ roomId });
+      if (dbRoom && dbRoom.messages && dbRoom.messages.length > 0) {
+        socket.emit("load-chat-history", dbRoom.messages);
+      }
+
+      // D. Broadcast updated connected users list
       const clients = getAllConnectedClients(roomId, io);
       io.to(roomId).emit("joined-clients", clients);
     });
 
+    // 2. REAL-TIME CODE CHANGE (Keeps Redis hot)
     socket.on("code-change", async ({ roomId, newCode }) => {
       await redisClient.set(roomId, newCode);
       socket.in(roomId).emit("code-update", newCode);
     });
 
-    socket.on("send-message", ({ roomId, username, text, time }) => {
-      // Sender ko chhod kar same room ke baaki sabhi logo ko message bhej do
+    // 3. PERSISTENT CHAT BROADCASTER (Saves to MongoDB in background)
+    socket.on("send-message", async ({ roomId, username, text, time }) => {
+      // A. Live logo ko dikhao
       socket.in(roomId).emit("receive-message", { username, text, time });
+
+      // B. Asynchronous DB Push (Zero Lag for users)
+      try {
+        await Room.findOneAndUpdate(
+          { roomId },
+          { $push: { messages: { username, text, time } } },
+          { upsert: true }
+        );
+      } catch (err) {
+        console.error("Chat DB Sync failed:", err.message);
+      }
     });
 
-    //CODE OUTPUT BROADCASTER
+    // 4. CODE OUTPUT BROADCASTER
     socket.on("sync-output", ({ roomId, output }) => {
       socket.in(roomId).emit("receive-output", output);
     });
 
-    socket.on("join-room", async ({ roomId, username }) => {
-      // 1. User ko room me dalo
-      socket.join(roomId);
-
-      // 2. MongoDB me record save hoga!
-      const newSession = new Session({ username, roomId });
-      await newSession.save();
-
-      console.log(`${username} saved to Database!`);
-    });
-
+    // 5. DISCONNECT & FLUSH REDIS TO DB
     socket.on("disconnect", async () => {
       console.log(`🔴 User Disconnected: ${socket.id}`);
       const roomId = socket.roomId;
 
       if (roomId) {
-        // 1. Purana MongoDB save logic
-        const codeToSave = await redisClient.get(roomId);
-        if (codeToSave) {
-          await Room.findOneAndUpdate(
-            { roomId },
-            { code: codeToSave },
-            { upsert: true },
-          );
+        try {
+          const codeToSave = await redisClient.get(roomId);
+          if (codeToSave) {
+            await Room.findOneAndUpdate(
+              { roomId },
+              { code: codeToSave },
+              { upsert: true }
+            );
+          }
+        } catch (err) {
+          console.error("Disconnect DB flush failed:", err.message);
         }
 
-        //LOGIC: Koi chala gaya? Baaki bache logo ko nayi list bhejo!
         const remainingClients = getAllConnectedClients(roomId, io);
         socket.in(roomId).emit("joined-clients", remainingClients);
       }
