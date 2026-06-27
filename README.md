@@ -68,6 +68,7 @@ Cluster Dashboard: Built-in hidden admin modal to track real-time cluster health
 
 State Synchronization: Ensures the UI strictly reflects the server state, actively pushing offline UI fallbacks if the WebSocket connection drops.
 
+
 👨‍💻 Developed By:
 
 Charan Singh Yadav
