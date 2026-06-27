@@ -65,18 +65,20 @@ export const initSocket = (io) => {
       socket.in(roomId).emit("code-update", newCode);
     });
 
-    // 3. PERSISTENT CHAT BROADCASTER (Saves to MongoDB in background)
+// 🔥 3. PERSISTENT CHAT BROADCASTER (Hard-Write DB)
     socket.on("send-message", async ({ roomId, username, text, time }) => {
-      // A. Live logo ko dikhao
       socket.in(roomId).emit("receive-message", { username, text, time });
 
-      // B. Asynchronous DB Push (Zero Lag for users)
       try {
-        await Room.findOneAndUpdate(
-          { roomId },
-          { $push: { messages: { username, text, time } } },
-          { upsert: true }
-        );
+        // FindoneAndUpdate ki jagah hum pehle fetch karenge, push karenge aur explicitly .save() maarenge!
+        let dbRoom = await Room.findOne({ roomId });
+        if (!dbRoom) {
+            dbRoom = new Room({ roomId, messages: [] });
+        }
+        
+        dbRoom.messages.push({ username, text, time });
+        await dbRoom.save(); // This forces MongoDB to write 100%!
+        console.log(`💬 Saved message to DB for room: ${roomId}`);
       } catch (err) {
         console.error("Chat DB Sync failed:", err.message);
       }
