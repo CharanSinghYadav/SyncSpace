@@ -17,6 +17,14 @@ const RoomPage = () => {
 
     const [mobileView, setMobileView] = useState("editor");
 
+    // 🔥 1. NEW DESKTOP REAL-ESTATE STATES
+    const [showDesktopChat, setShowDesktopChat] = useState(true);
+    const [hasUnread, setHasUnread] = useState(false);
+
+    // Ref to keep track inside socket listener without triggering re-renders
+    const showChatRef = useRef(showDesktopChat);
+    useEffect(() => { showChatRef.current = showDesktopChat; }, [showDesktopChat]);
+
     const username = location.state?.username;
 
     useEffect(() => {
@@ -30,9 +38,15 @@ const RoomPage = () => {
         
         socket.on('joined-clients', (clientsList) => setClients(clientsList));
         
-        socket.on('receive-message', (data) => setMessages((prev) => [...prev, data]));
+        // 🔥 2. UPDATED MESSAGE RECEIVER WITH SILENT PING SENSOR
+        socket.on('receive-message', (data) => {
+            setMessages((prev) => [...prev, data]);
+            // Agar chat tab band hai, toh Red Ping activate karo!
+            if (!showChatRef.current) {
+                setHasUnread(true);
+            }
+        });
         
-        // MongoDB se aayi hui purani chat history ko state me load karo!
         socket.on('load-chat-history', (pastMessages) => {
             console.log("📜 Hydrating chat history from Database...", pastMessages);
             setMessages(pastMessages);
@@ -64,6 +78,15 @@ const RoomPage = () => {
         setCurrentMsg('');
     };
 
+    // Helper to clear unread ping when chat is opened
+    const toggleDesktopChat = () => {
+        setShowDesktopChat(prev => {
+            const nextState = !prev;
+            if (nextState === true) setHasUnread(false);
+            return nextState;
+        });
+    };
+
     return (
         <div className="flex flex-col h-screen w-screen bg-[#090D16] text-slate-100 overflow-hidden font-sans antialiased relative">
             
@@ -82,22 +105,43 @@ const RoomPage = () => {
                     <span className="text-[11px] font-mono font-medium text-slate-200">{roomId}</span>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                    <span className="text-[10px] md:text-[11px] font-mono text-slate-400">{isConnected ? 'ONLINE' : 'OFFLINE'}</span>
+                {/* RIGHT CONTROLS */}
+                <div className="flex items-center gap-3">
+                    
+                    {/* 🔥 3. THE DESKTOP PRIVACY & REAL-ESTATE TOGGLE */}
+                    <button
+                        onClick={toggleDesktopChat}
+                        className="hidden md:flex relative items-center gap-1.5 bg-[#090D16] hover:bg-[#1F2937] text-slate-300 px-2.5 py-1 rounded border border-[#1F2937] text-[11px] font-mono transition-colors cursor-pointer"
+                        title={showDesktopChat ? "Hide Sidebar (Maximize Code)" : "Show Sidebar"}
+                    >
+                        <span>{showDesktopChat ? "Hide Chat" : "Show Chat"}</span>
+                        
+                        {/* THE UNREAD CYBER-PING (Only glows if sidebar is closed & new msg arrives) */}
+                        {!showDesktopChat && hasUnread && (
+                            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+                            </span>
+                        )}
+                    </button>
+
+                    <div className="flex items-center gap-2">
+                        <div className={`w-1.5 h-1.5 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                        <span className="text-[10px] md:text-[11px] font-mono text-slate-400">{isConnected ? 'ONLINE' : 'OFFLINE'}</span>
+                    </div>
                 </div>
             </header>
 
             {/* WORKSPACE BODY */}
             <div className="flex flex-1 min-h-0 w-full relative">
                 
-                {/* LEFT EDITOR CANVAS */}
-                <div className={`w-full md:w-3/4 md:border-r border-[#1F2937] h-full min-w-0 min-h-0 flex-col ${mobileView === "editor" ? "flex" : "hidden md:flex"}`}>
+                {/* LEFT EDITOR CANVAS (Auto-Stretches to w-full if sidebar hidden) */}
+                <div className={`w-full ${showDesktopChat ? 'md:w-3/4 md:border-r border-[#1F2937]' : 'md:w-full'} h-full min-w-0 min-h-0 flex-col transition-all duration-200 ${mobileView === "editor" ? "flex" : "hidden md:flex"}`}>
                     <CodeEditor roomId={roomId} />
                 </div>
 
                 {/* RIGHT COLLABORATION SIDEBAR */}
-                <div className={`w-full md:w-1/4 bg-[#101623] h-full min-w-0 min-h-0 pb-16 md:pb-0 flex-col ${mobileView === "chat" ? "flex" : "hidden md:flex"}`}>
+                <div className={`w-full md:w-1/4 bg-[#101623] h-full min-w-0 min-h-0 pb-16 md:pb-0 flex-col ${showDesktopChat ? (mobileView === "chat" ? "flex" : "hidden md:flex") : "hidden"}`}>
                     
                     <div className="p-4 shrink-0 border-b border-[#1F2937]">
                         <div className="flex items-center justify-between mb-3">
